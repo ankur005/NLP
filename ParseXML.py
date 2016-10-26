@@ -1,10 +1,12 @@
 import xml.etree.ElementTree as xml
+from HTMLRemove import strip_tags, stripCode, stripLinks, removePeriods, removeCharacters,getCode, containsAPI
+import re
+import nltk
 
 questions_remove = []
 questions = []
 answers = {}
 tags_list = ['java','api','c#','python','string','c++']
-
 
 def create_sub_xml():
     xml_file = open('parsed.xml','w')
@@ -41,13 +43,13 @@ def parse_xml():
             else:
                 questions.append(post_id)
                 count_threads += 1
-                csv_file.write(row.attrib['Body'].encode('ascii',errors='ignore') + '\n')
+                csv_file.write(re.sub('\n','',row.attrib['Body'].encode('ascii',errors='ignore'),flags=re.DOTALL) + '\n')
         elif post_type == '2':
             parent_id = row.attrib['ParentId']
             if parent_id in questions_remove:
                 xml_root.remove(row)
             elif parent_id in questions:
-                csv_file.write(row.attrib['Body'].encode('ascii',errors='ignore') + '\n')
+                csv_file.write(re.sub('\n','',row.attrib['Body'].encode('ascii',errors='ignore'),flags=re.DOTALL) + '\n')
 
         if count_threads > 200:
             if count_posts > 1000:
@@ -55,5 +57,25 @@ def parse_xml():
 
     csv_file.close()
 
-# create_sub_xml()
-parse_xml()
+def cleanPosts():
+    read = open('data.txt','r')
+    write = open('cleanData.txt','w')
+    for line in read:
+        line = re.sub('<pre><code>.*?</code></pre>', '', line, flags=re.DOTALL)
+        line = strip_tags(line)
+        line = stripLinks(line)
+        write.write(line)
+    read.close()
+    write.close()
+
+def tokenize():
+    f = open('cleanData.txt','r')
+    tok = open('tokens.txt','w')
+    for line in f:
+        tokens = nltk.word_tokenize(line)
+        for token in tokens:
+            tok.write(token + '\tO\n')
+    f.close()
+    tok.close()
+
+tokenize()
